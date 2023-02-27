@@ -1,11 +1,11 @@
-﻿import pygame as pg
+import pygame as pg
 import yadisk
 import requests
 import os
 from random import randint, choice
 from datetime import datetime, timedelta
 pg.init()
-SERVER = yadisk.YaDisk(token='ВАШ_ТОКЕН')
+SERVER = yadisk.YaDisk(token='AQAAAABe4dAKAAfqWTsYeQYEpkBesP0JeSYLRTw')
 clock = pg.time.Clock()
 VERSION_DATA = {'version': '0.0.4',
                 'files': ['0F.png', '0T.png', '1F.png', '1T.png', '5T.png',
@@ -16,9 +16,123 @@ VERSION_DATA = {'version': '0.0.4',
                 'enc': 'Windows-1251',
                 'data': 'data.txt',
                 'su': '20.05.2022'}
-COLORS = {'grey': (150, 150, 150), 'lilac': (100, 130, 250), 'red': (250, 40, 80),
+COLORS = {"wh": (30, 30, 30), "gr": (150, 150, 150), "fn": (90, 100, 90), "li": (255, 230, 190),
+          'grey': (150, 150, 150), 'lilac': (100, 130, 250), 'red': (250, 40, 80),
           'blue': (40, 120, 200), 'dark': (60, 60, 60), 'green': (40, 250, 80),
-          'yellow': (240, 200, 10), 'meddle': (90, 90, 100), 'dark_blue': (30, 90, 150)}
+          'yellow': (240, 200, 10), 'meddle': (90, 90, 100), 'dark_blue': (30, 90, 150), 'white': (255, 255, 255),
+          'black': (0, 0, 0), 'orange': (180, 120, 40), 'dark_green': (20, 120, 60)}
+
+
+class Button_sp:
+    def __init__(self, screen, x, y, sx, sy, color=[0, 0, 0], grad=200, text="", font=20, text_c=[0, 0, 0]):
+        self.plot, self.sc, self.llf, self.grad = pg.Surface((sx, sy)), screen, False, grad
+        self.x, self.y, self.sx, self.sy, self.col = x, y, sx, sy, color[:]
+        self.font, self.text, self.text_c = pg.font.SysFont(None, font), text, text_c
+        self.render(color)
+
+    def render(self, color):
+        self.plot.fill([0, 0, 0])
+        self.plot.set_alpha(self.grad)
+        bor = int(min(self.sx, self.sy) * 0.2)
+        pg.draw.rect(self.plot, color, (0, 0, self.sx, self.sy), border_radius=bor)
+        pg.draw.rect(self.plot, list(map(lambda g: int(g * 0.6), color)),
+                          (0, 0, self.sx, self.sy), 2, border_radius=bor)
+        text = self.font.render(self.text, True, self.text_c)
+        self.plot.blit(text, text.get_rect(center=self.plot.get_rect().center))
+        self.plot.set_colorkey([0, 0, 0])
+
+    def show(self, x, y):
+        lf = x in range(self.x, self.x + self.sx) and y in range(self.y, self.y + self.sy)
+        if lf and not self.llf:
+            self.llf = True
+            self.render(list(map(lambda g: int(g * 0.7), self.col)))
+        elif self.llf and not lf:
+            self.llf = False
+            self.render(self.col)
+        self.sc.blit(self.plot, (self.x, self.y))
+        return lf
+
+
+class Switch:
+    def __init__(self, sc, x, y, sx, sy, col_bor, col_off, col_on, border=4, grad=255, state=False):
+        self.x, self.y, self.sx, self.sy, self.col_bor, self.moo = x, y, sx, sy, col_bor, False
+        self.plot, self.col_off, self.col_on, self.state = pg.Surface((sx, sy)), col_off, col_on, state
+        self.bor, self.sc, self.grad, self.selected = border, sc, grad, False
+        self.rad, self.last_tick = (sy - 4 * self.bor) // 2, pg.time.get_ticks()
+        self.ma, self.mi = sx - 2 * self.bor - self.rad, 2 * self.bor + self.rad
+        self.step, self.las = (sx - 4 * self.bor) // 10, self.ma if state else self.mi
+        self.render()
+
+    def render(self):
+        po = self.sy // 2
+        self.plot.fill([0, 0, 0])
+        self.plot.set_alpha(self.grad)
+        col_off, col_on, col_bor = self.col_off, self.col_on, self.col_bor
+        if self.selected:
+            col_off = list(map(lambda g: int(g * 0.7), self.col_off))
+            col_on = list(map(lambda g: int(g * 0.7), self.col_on))
+            col_bor = list(map(lambda g: int(g * 0.7), self.col_bor))
+        if self.moo and pg.time.get_ticks() - 30 > self.last_tick:
+            self.last_tick = pg.time.get_ticks()
+            self.las += self.step // 2 if self.state else -self.step // 2
+            if not self.state and self.las in range(self.mi - self.step, self.mi):
+                self.moo, self.las = False, self.mi
+            if self.state and self.las in range(self.ma, self.ma + self.step):
+                self.moo, self.las = False, self.ma
+        pg.draw.rect(self.plot, col_off, (0, 0, self.sx, self.sy), border_radius=po)
+        pg.draw.rect(self.plot, col_on, (0, 0, self.las, self.sy), border_top_left_radius=po, border_bottom_left_radius=po)
+        pg.draw.rect(self.plot, col_bor, (0, 0, self.sx, self.sy), self.bor, border_radius=po)
+        pg.draw.circle(self.plot, self.col_bor, (self.las, self.sy // 2), self.rad)
+        self.plot.set_colorkey([0, 0, 0])
+
+    def switch(self):
+        self.moo, self.state = True, False if self.state else True
+        self.perk = 0
+
+    def show(self, x, y):
+        lf = x in range(self.x, self.x + self.sx) and y in range(self.y, self.y + self.sy)
+        if self.moo:
+            self.render()
+        elif lf != self.selected:
+            self.selected = lf
+            self.render()
+        """((x - self.las) ** 2 + (y - self.sy // 2) ** 2) <= self.rad ** 2"""
+        self.sc.blit(self.plot, (self.x, self.y))
+        return lf
+
+
+class ProgressBar:
+    def __init__(self, sc, x, y, sx, sy, col_bor, col_off, col_on, border=4, grad=255):
+        self.x, self.y, self.sx, self.sy, self.col_bor = x, y, sx, sy, col_bor
+        self.plot, self.col_off, self.col_on = pg.Surface((sx, sy)), col_off, col_on
+        self.bor, self.sc, self.grad = border, sc, grad
+        self.ma, self.mi = sx - self.bor, 4 * self.bor
+        self.step, self.las = (self.ma - self.mi) / 100, 0
+        self.render()
+
+    def render(self):
+        po, now = self.sy // 10, int(self.mi + self.step * self.las)
+        self.plot.fill([0, 0, 0])
+        self.plot.set_alpha(self.grad)
+        pg.draw.rect(self.plot, self.col_off, (0, 0, self.sx, self.sy), border_radius=po)
+        pg.draw.rect(self.plot, self.col_on, (0, 0, now, self.sy), border_radius=po)
+        pg.draw.rect(self.plot, self.col_bor, (0, 0, self.sx, self.sy), self.bor, border_radius=po)
+        self.plot.set_colorkey([0, 0, 0])
+
+    def show(self, x, y):
+        lf = x in range(self.x, self.x + self.sx) and y in range(self.y, self.y + self.sy)
+        self.sc.blit(self.plot, (self.x, self.y))
+        return lf
+
+    def set_prog(self, per):
+        if per > 0 and per <= 100:
+            self.las = per
+            self.render()
+
+    def add_prog(self, per):
+        if per > 0 and self.las + per <= 100:
+            self.las += per
+            self.render()
 
 
 class Button:
@@ -41,12 +155,13 @@ class Button:
         else:
             self.col = self.nc[:]
         r = self.hy // 10
-        pg.draw.rect(self.screen, self.col, ((self.x - r, self.y), (self.hx + r * 2, self.hy)))
+        """pg.draw.rect(self.screen, self.col, ((self.x - r, self.y), (self.hx + r * 2, self.hy)))
         pg.draw.rect(self.screen, self.col, ((self.x, self.y - r), (self.hx, self.hy + r * 2)))
         pg.draw.circle(self.screen, self.col, (self.x, self.y), r)
         pg.draw.circle(self.screen, self.col, (self.x + self.hx, self.y), r)
         pg.draw.circle(self.screen, self.col, (self.x, self.y + self.hy), r)
-        pg.draw.circle(self.screen, self.col, (self.x + self.hx, self.y + self.hy), r)
+        pg.draw.circle(self.screen, self.col, (self.x + self.hx, self.y + self.hy), r)"""
+        pg.draw.rect(self.screen, self.col, ((self.x, self.y), (self.hx, self.hy)), border_radius=r)
         if self.name != '':
             b_text = self.font.render(self.name, True, [255 - self.col[0], 255 - self.col[1], 255 - self.col[2]])
             if self.capflag:
@@ -232,12 +347,12 @@ def resort():
 
 class Cell:
     def __init__(self, x, y, hx, hy, image, color, screen):
-        self.x, self.y, self.hx, self.hy = x * 11 // 10, y * 11 // 10, hx, hy
+        self.x, self.y, self.hx, self.hy = x, y, hx, hy
         self.image, self.col, self.nc = image, color, color
         self.screen, self.main, r = screen, color, self.hy // 10
         self.task_c, self.task_t, self.task_l = None, None, None
         if image is not None:
-            self.image = pg.transform.scale(self.image, (self.hx + r * 2, self.hy + r * 2))
+            self.image = pg.transform.scale(self.image, (self.hx, self.hy))
             self.image.set_colorkey((255, 255, 255))
 
     def show(self, flag_m=False, gr=None):
@@ -245,7 +360,7 @@ class Cell:
         if gr is not None:
             self.x = gr
         px, py = pg.mouse.get_pos()
-        flag = px in range(self.x - r, self.x + self.hx + r) and py in range(self.y - r, self.y + self.hy + r)
+        flag = px in range(self.x, self.x + self.hx) and py in range(self.y, self.y + self.hy)
         if self.task_c is not None and not flag_m:
             if (datetime.now() - self.task_l) > timedelta(seconds=self.task_t):
                 self.nc, self.task_c = self.main[:], None
@@ -255,21 +370,22 @@ class Cell:
             self.col = list(map(lambda dx: dx * 50 // 100, self.nc[:]))
         else:
             self.col = self.nc[:]
-        pg.draw.rect(self.screen, self.col, ((self.x - r, self.y), (self.hx + r * 2, self.hy)))
+        """pg.draw.rect(self.screen, self.col, ((self.x - r, self.y), (self.hx + r * 2, self.hy)))
         pg.draw.rect(self.screen, self.col, ((self.x, self.y - r), (self.hx, self.hy + r * 2)))
         pg.draw.circle(self.screen, self.col, (self.x, self.y), r)
         pg.draw.circle(self.screen, self.col, (self.x + self.hx, self.y), r)
         pg.draw.circle(self.screen, self.col, (self.x, self.y + self.hy), r)
-        pg.draw.circle(self.screen, self.col, (self.x + self.hx, self.y + self.hy), r)
+        pg.draw.circle(self.screen, self.col, (self.x + self.hx, self.y + self.hy), r)"""
+        pg.draw.rect(self.screen, self.col, ((self.x, self.y), (self.hx, self.hy)), border_radius=r)
         if self.image is not None:
-            screen.blit(self.image, (self.x - r, self.y - r, self.hx + self.x, self.hy + self.y))
+            screen.blit(self.image, (self.x, self.y, self.hx + self.x, self.hy + self.y))
         return flag
 
     def rename(self, image, color, ang=0):
         r = self.hy // 10
         self.image, self.nc, self.main = image, color, color
         if image is not None:
-            self.image = pg.transform.scale(self.image, (self.hx + r * 2, self.hy + r * 2))
+            self.image = pg.transform.scale(self.image, (self.hx, self.hy))
             self.image = pg.transform.rotate(self.image, ang * 90)
             self.image.set_colorkey((255, 255, 255))
 
@@ -307,12 +423,13 @@ class Field:
         self.x, self.y, self.sc = x, y, screen
         self.my_field = [[0 for i in range(self.D)] for _ in range(self.D)]
         self.en_field = [[0 for i in range(self.D)] for _ in range(self.D)]
-        self.h = (self.hxy[1] // 30)
+        self.h = (self.hxy[1] // 25)
+        dims = self.h // 10
         for x in range(self.D):
             for y in range(self.D):
-                self.my_field[x][y] = Cell(int(self.x + self.h * x * 1.2), int(self.y + self.h * y * 1.2),
+                self.my_field[x][y] = Cell(int(self.x + (self.h + dims) * x), int(self.y + (self.h + dims) * y),
                                            self.h, self.h, None, COLORS['blue'], self.sc)
-                self.en_field[x][y] = Cell(int(self.x + self.h * x * 1.2), int(self.y + self.h * y * 1.2),
+                self.en_field[x][y] = Cell(int(self.x + self.h * x + dims * x), int(self.y + self.h * y + dims * y),
                                            self.h, self.h, None, COLORS['blue'], self.sc)
 
         self.ships, self.points, self.helf, self.shoots = {}, {}, 0, 0
@@ -326,7 +443,7 @@ class Field:
             for y in range(self.D):
                 if None not in self.tasker and not self.pause:
                     dd = ((self.tasker[2] - x) ** 2 + (self.tasker[3] - y) ** 2) ** 0.5
-                    if self.tasker[0] - 0.4 <= dd <= self.tasker[0] + 0.4:
+                    if self.tasker[0] - 0.5 <= dd <= self.tasker[0] + 0.5:
                         self.my_field[x][y].task(0.1, self.tasker[1], self.tasker[0])
                 if self.my_field[x][y].show(self.pause):
                     rezult = [x, y]
@@ -342,7 +459,7 @@ class Field:
             for y in range(self.D):
                 if None not in self.tasker and not self.pause:
                     dd = ((self.tasker[2] - x) ** 2 + (self.tasker[3] - y) ** 2) ** 0.5
-                    if self.tasker[0] - 0.4 <= dd <= self.tasker[0] + 0.4:
+                    if self.tasker[0] - 0.5 <= dd <= self.tasker[0] + 0.5:
                         self.en_field[x][y].task(0.1, self.tasker[1], self.tasker[0])
                 if self.en_field[x][y].show(self.pause):
                     rezult = [x, y]
@@ -590,7 +707,6 @@ class TopSetupPanel:
                                          r * 2.5), 1.5 * pi, pi * 2, 2)
 
 
-
 game_loop = starting()
 if game_loop:
     files = resort()
@@ -598,8 +714,10 @@ if game_loop:
     pg.display.toggle_fullscreen()
     hx, hy = pg.display.get_window_size()
     hy1, hx1 = (hx * 0.9) // 10, (hy * 96) // 100
-    player = Field(screen, int(hx * 0.43), int(hy * 0.115), files)
-    enemy = Field(screen, int(hx * 0.43), int(hy * 0.115), files)
+    player = Field(screen, int(hx * 0.48), int(hy * 0.115), files)
+    enemy = Field(screen, int(hx * 0.48), int(hy * 0.115), files)
+    f_sw_b = Switch(screen, int(hx * 0.42), int(hy * 0.94), int(hx * 0.05), int(hy * 0.04), COLORS["dark_blue"],
+                    COLORS['grey'], COLORS["orange"], )
     enemy.autopos()
     enemy.resp()
     but = Button(int(hx * 0.145), int(hy * 0.521), int(hx * 0.145), int(hy * 0.065), 'update', COLORS['green'], screen)
@@ -610,6 +728,7 @@ if game_loop:
                    int(hy1 * 8 / 20), files['info'], COLORS['dark_blue'], screen)
     close_b = Button(int(hx1 * 30 / 20), int(hy1 * 2 / 20), int(hx1 * 6 / 20),
                      int(hy1 * 9 / 20), 'выйти', COLORS['dark_blue'], screen)
+    scre = Switch
     my_step, game, build, my_step_b = True, False, False, True
     ship_b_1 = Button(int(hx * 0.145), int(hy * 0.25), int(hx * 0.2), int(hy * 0.065),
                       f'линкор: {player.chose_ship[5]}', COLORS['meddle'], screen)
@@ -649,6 +768,7 @@ if game_loop:
     text_view = [enemy_helf, enemy_shoots, player_helf, player_shoots, winer, steps]
     enemy_iscl, engr, last_shoot = [], 'N', False
     while game_loop:
+        spx, spy = pg.mouse.get_pos()
         enemy_helf.text = f'здоровье врага: {enemy.helf}'
         enemy_shoots.text = f'атаки врага: {enemy.shoots}'
         player_helf.text = f'здоровье игрока: {player.helf}'
@@ -664,10 +784,20 @@ if game_loop:
         screen.fill(COLORS['dark'])
         for name in text_view:
             name.show(int(hx * 0.15))
+        if my_step_b != my_step and False:
+            print(my_step, my_step_b)
+            if not game or not my_step or win:
+                f_sw_b.state, f_sw_b.moo = False, True
+                f_sw_b.render()
+            if my_step:
+                f_sw_b.state, f_sw_b.moo = True, True
+                f_sw_b.render()
         if not game or my_step == my_step_b:
             timer_e.last = datetime.now()
         elif timer_e.tk():
             my_step = my_step_b
+            f_sw_b.state, f_sw_b.moo = my_step, True
+            f_sw_b.render()
         if not left_panel_2.mode and not build and timer2.tk() and not game:
             player.task(COLORS[choice(list(COLORS.keys()))], randint(0, player.D), randint(0, player.D))
         if timer1.tk() and left_panel_2.mode and not build:
@@ -688,23 +818,26 @@ if game_loop:
             now = left_panel_1
         else:
             now = left_panel_2
+        setup_b_f, start_b_f, close_b_f = setup_b.show(), start_b.show(), close_b.show()
         flag, buttons = now.show()
-        if not game or not my_step or win:
-            pxy = player.show()
-        elif my_step:
+        if f_sw_b.state:
             pxy = player.show_enemy()
+        else:
+            pxy = player.show()
         a2 = False
         if None not in pxy and None not in ship_in_hands and not game:
             a1, a2, a3 = player.presi_ship(pxy[0], pxy[1], ship_in_hands[0], ship_in_hands[1] % 4)
-        setup_b_f, start_b_f, close_b_f = setup_b.show(), start_b.show(), close_b.show()
+        sw_b_f = f_sw_b.show(spx, spy)
         for event in pg.event.get():
             if event.type == pg.MOUSEBUTTONDOWN and (win or game):
+                if sw_b_f:
+                    f_sw_b.switch()
                 if close_b_f:
                     game_loop = False
                 if start_b_f:
                     setup_b.rename(files['setup1'], COLORS['dark_blue'])
-                    player = Field(screen, int(hx * 0.43), int(hy * 0.115), files)
-                    enemy = Field(screen, int(hx * 0.43), int(hy * 0.115), files)
+                    player = Field(screen, int(hx * 0.48), int(hy * 0.115), files)
+                    enemy = Field(screen, int(hx * 0.48), int(hy * 0.115), files)
                     enemy.autopos()
                     enemy.resp()
                     left_panel_1.hide(True)
@@ -713,6 +846,8 @@ if game_loop:
                     winer.text, win, game = 'победитель: ----', False, False
                     steps.text = 'ходит: ----'
                     enemy_iscl, engr, last_shoot = [], 'N', False
+                    f_sw_b.state, f_sw_b.moo, build = False, True, True
+                    f_sw_b.render()
                     all_mappa = []
                     for xl in range(1, 19):
                         for yl in range(1, 19):
@@ -753,10 +888,12 @@ if game_loop:
                         player.resp()
                         now.hide(False)
                         build, game = False, True
+                        f_sw_b.state, f_sw_b.moo = True, True
+                        f_sw_b.render()
                     elif buttons[6]:
                         player.autopos()
                         now.hide(False)
-                if game and None not in pxy and my_step and my_step == my_step_b:
+                if game and None not in pxy and my_step and my_step == my_step_b and f_sw_b.state:
                     rez, cor = enemy.attack(pxy[0], pxy[1])
                     player.shoot_data(rez, cor)
                     if rez == 0:
@@ -829,5 +966,5 @@ if game_loop:
                     enemy_po = all_mappa.pop(all_mappa.index(choice(all_mappa)))
                     while enemy_po in enemy_iscl:
                         enemy_po = all_mappa.pop(all_mappa.index(choice(all_mappa)))
-        clock.tick(30)
+        clock.tick(60)
         pg.display.flip()
