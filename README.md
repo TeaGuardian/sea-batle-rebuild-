@@ -1,1 +1,1 @@
-# Eterin
+# Sea battle game 
