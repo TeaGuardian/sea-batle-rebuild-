@@ -24,6 +24,7 @@ COLORS = {"wh": (30, 30, 30), "gr": (150, 150, 150), "fn": (90, 100, 90), "li": 
 
 
 class Button_sp:
+    """улучшенный класс кнопки (разработка)"""
     def __init__(self, screen, x, y, sx, sy, color=[0, 0, 0], grad=200, text="", font=20, text_c=[0, 0, 0]):
         self.plot, self.sc, self.llf, self.grad = pg.Surface((sx, sy)), screen, False, grad
         self.x, self.y, self.sx, self.sy, self.col = x, y, sx, sy, color[:]
@@ -54,6 +55,7 @@ class Button_sp:
 
 
 class Switch:
+    """класс переключателя"""
     def __init__(self, sc, x, y, sx, sy, col_bor, col_off, col_on, border=4, grad=255, state=False):
         self.x, self.y, self.sx, self.sy, self.col_bor, self.moo = x, y, sx, sy, col_bor, False
         self.plot, self.col_off, self.col_on, self.state = pg.Surface((sx, sy)), col_off, col_on, state
@@ -102,6 +104,7 @@ class Switch:
 
 
 class ProgressBar:
+    """класс прогресбара"""
     def __init__(self, sc, x, y, sx, sy, col_bor, col_off, col_on, border=4, grad=255):
         self.x, self.y, self.sx, self.sy, self.col_bor = x, y, sx, sy, col_bor
         self.plot, self.col_off, self.col_on = pg.Surface((sx, sy)), col_off, col_on
@@ -125,17 +128,20 @@ class ProgressBar:
         return lf
 
     def set_prog(self, per):
+        """устанавливает значение в процентах"""
         if per > 0 and per <= 100:
             self.las = per
             self.render()
 
     def add_prog(self, per):
+        """добавляет к текущему значению"""
         if per > 0 and self.las + per <= 100:
             self.las += per
             self.render()
 
 
 class Button:
+    """основной класс кнопки с текстовым полем"""
     def __init__(self, x, y, hx, hy, text, color, screen):
         self.x, self.y, self.hx, self.hy = x, y, hx, hy
         self.name, self.col, self.nc = text, color, color
@@ -180,6 +186,7 @@ class Button:
 
 
 def check():
+    """проверка наличия файлов"""
     global VERSION_DATA
     a = os.listdir()
     rez = []
@@ -197,14 +204,16 @@ def check():
 
 
 def enternet():
+    """проверка интернет соединения"""
     try:
-        d = requests.get('https://yandex.ru/').status_code
+        d = requests.get('https://ya.ru/').status_code
     except IOError:
         return [False, False]
     return [True, SERVER.check_token()]
 
 
 def find_update():
+    """проверка наличия других версий игры на сервере"""
     rez = []
     for item in SERVER.listdir('/app1/'):
         if '.exe' in item['name'] and item['name'] != VERSION_DATA['version'] + '.exe':
@@ -213,6 +222,7 @@ def find_update():
 
 
 def starting_load():
+    """цикл установки игры и исправления неполадок"""
     pg.init()
     if not os.path.isdir("gamesou"):
         os.mkdir("gamesou")
@@ -292,6 +302,7 @@ def starting_load():
 
 
 def starting():
+    """цикл старта с удалением устаревшей версии"""
     if 'deliteversion.txt' not in os.listdir():
         return starting_load()
     pg.init()
@@ -334,6 +345,7 @@ def starting():
 
 
 def resort():
+    """сортировка игровых файлов между дерикториями"""
     global VERSION_DATA
     rezult = {}
     for i in VERSION_DATA['files']:
@@ -346,6 +358,7 @@ def resort():
 
 
 class Cell:
+    """базовый класс ячейки поля, кнопка с полем под картинку"""
     def __init__(self, x, y, hx, hy, image, color, screen):
         self.x, self.y, self.hx, self.hy = x, y, hx, hy
         self.image, self.col, self.nc = image, color, color
@@ -382,6 +395,7 @@ class Cell:
         return flag
 
     def rename(self, image, color, ang=0):
+        """меняет цвет и картинку если она передана"""
         r = self.hy // 10
         self.image, self.nc, self.main = image, color, color
         if image is not None:
@@ -390,9 +404,11 @@ class Cell:
             self.image.set_colorkey((255, 255, 255))
 
     def replace(self, x, y):
+        """перемещает на указанные координаты"""
         self.x, self.y = x, y
 
     def task(self, time, color, g=0):
+        """устанавливает задачу назначения временного цвета"""
         if self.task_c == color or self.task_c is None:
             self.task_l, self.task_t = datetime.now(), time
             r1, g1, b1 = self.main
@@ -402,6 +418,7 @@ class Cell:
 
 
 class Timer:
+    """класс задержки"""
     def __init__(self, tick):
         self.tick, self.last = tick, datetime.now()
 
@@ -413,6 +430,7 @@ class Timer:
 
 
 class Field:
+    """главный класс"""
     def __init__(self, screen, x, y, files):
         self.chose_ship = {5: 2, 4: 4, 3: 6, 2: 8, 1: 10}
         self.files = files
@@ -438,6 +456,7 @@ class Field:
         self.task(COLORS['green'], randint(0, self.D), randint(0, self.D))
 
     def show(self):
+        """отоброзить своё поле"""
         rezult = [None, None]
         for x in range(self.D):
             for y in range(self.D):
@@ -454,6 +473,7 @@ class Field:
         return rezult
 
     def show_enemy(self):
+        """отобразить то, что известно о поле врага"""
         rezult = [None, None]
         for x in range(self.D):
             for y in range(self.D):
@@ -470,12 +490,15 @@ class Field:
         return rezult
 
     def task(self, color, x, y):
+        """создать распространяющуюся волну"""
         self.tasker = [0, color, x, y]
 
     def freez(self, mode):
+        """остановить все анимации на поле"""
         self.pause = mode
 
     def pal(self, x, y):
+        """проверяет можно ли разместить корабль"""
         rez = []
         sp = [0, 1, -1]
         for i in sp:
@@ -490,6 +513,7 @@ class Field:
         return False not in rez
 
     def presi_ship(self, x, y, hxy, ang):
+        """предпоказ устанавливаемого корабля"""
         if ang == 1:
             ax, ay, fl1 = 0, -1 * hxy, -1
         elif ang == 0:
@@ -515,6 +539,7 @@ class Field:
         return [rez, color == COLORS['green'], ang]
 
     def set_ship(self, cor, ang):
+        """установить корабль"""
         self.chose_ship[len(cor)] -= 1
         num = 0
         self.helf += len(cor)
@@ -529,6 +554,7 @@ class Field:
         self.task(COLORS['green'], *cor[0])
 
     def destroy(self, x, y):
+        """удалить корабль пересекающий клетку"""
         if (x, y) in self.points.keys():
             ship = self.ships.pop(self.points[(x, y)][0], None)
             for i in ship:
@@ -539,6 +565,7 @@ class Field:
             self.helf -= len(ship)
 
     def shoot_data(self, rez, cor):
+        """вносит информацию о результатах выстрела"""
         if rez != -1:
             self.shoots += 1
         if rez == 0:
@@ -558,12 +585,14 @@ class Field:
             self.task(COLORS['red'], cor[0][0], cor[0][1])
 
     def ask_on_destroy(self, sh):
+        """проверить разрушен ли корабль"""
         for i in self.ships[sh]:
             if 'T' in self.points[(i[0], i[1])][1]:
                 return True
         return False
 
     def attack(self, x, y):
+        """нанести атаку по клетке"""
         if self.my_field[x][y].main != COLORS['blue'] or self.my_field[x][y].nc != COLORS['blue']:
             self.task(COLORS['lilac'], x, y)
             return -1, [[x, y]]
@@ -592,17 +621,20 @@ class Field:
         return 0, [[x, y]]
 
     def resp(self):
+        """подчищает цвета под кораблём"""
         for d in self.points.keys():
             self.my_field[d[0]][d[1]].main = COLORS['blue']
             self.my_field[d[0]][d[1]].nc = COLORS['blue']
 
     def dbtl(self):
+        """проверяет все ли корабли расставлены"""
         for i in self.chose_ship.keys():
             if self.chose_ship[i] != 0:
                 return False, i
         return True, 0
 
     def autopos(self):
+        """производит авторасстоновку, если все корабли использоапны очищает поле"""
         if self.dbtl()[0]:
             for i in range(self.D):
                 for j in range(self.D):
@@ -615,6 +647,7 @@ class Field:
 
 
 class LeftSetupPanel:
+    """боковая панель настроек"""
     def __init__(self, screen, objects=[]):
         xy = pg.display.get_window_size()
         self.sc, self.col = screen, COLORS['meddle']
@@ -654,9 +687,11 @@ class LeftSetupPanel:
         return flag, rezult
 
     def hide(self, mode):
+        """видима ли панель"""
         self.mode = mode
 
     def collibrate(self, a, b):
+        """выравнивает текст в кнопках под единый шрифт"""
         if a >= len(self.obj):
             return None
         rel = self.obj[a].fh
@@ -673,6 +708,7 @@ class LeftSetupPanel:
 
 
 class Text:
+    """класс текстового поля"""
     def __init__(self, text, x, y, color, screen):
         self.sc, self.x, self.y, self.text = screen, x, y, text
         self.color, self.font = color, pg.font.Font(None, pg.display.get_window_size()[1] // 25)
@@ -685,6 +721,7 @@ class Text:
 
 
 class TopSetupPanel:
+    """верхняя панель настроек"""
     def __init__(self, screen):
         xy = pg.display.get_window_size()
         self.sc, self.col = screen, COLORS['dark_blue']
@@ -709,6 +746,7 @@ class TopSetupPanel:
 
 game_loop = starting()
 if game_loop:
+    """основной цикл"""
     files = resort()
     screen = pg.display.set_mode()
     pg.display.toggle_fullscreen()
@@ -913,6 +951,7 @@ if game_loop:
                 else:
                     left_panel_1.obj[i].nc = COLORS['meddle']
         if not win and not my_step and my_step == my_step_b and timer3.tk():
+            """алгоритм бота"""
             if len(enemy_var):
                 varp = enemy_var.pop(randint(0, len(enemy_var) - 1))
                 rez2, cor2 = player.attack(enemy_po[0] + varp[0], enemy_po[1] + varp[1])
