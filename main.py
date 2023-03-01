@@ -1,13 +1,14 @@
-import pygame as pg
+﻿import pygame as pg
 import yadisk
 import requests
 import os
 from random import randint, choice
 from datetime import datetime, timedelta
+"""python -m PyInstaller --onefile --noconsole --icon=app.ico main.py"""
 pg.init()
 SERVER = yadisk.YaDisk(token='AQAAAABe4dAKAAfqWTsYeQYEpkBesP0JeSYLRTw')
 clock = pg.time.Clock()
-VERSION_DATA = {'version': '0.0.4',
+VERSION_DATA = {'version': '0.0.5',
                 'files': ['0F.png', '0T.png', '1F.png', '1T.png', '5T.png',
                           '2F.png', '2T.png', '3F.png', '3T.png', '5F.png',
                           '4F.png', '4T.png', 'info.png', 'go.png', '5M.png',
@@ -206,7 +207,7 @@ def check():
 def enternet():
     """проверка интернет соединения"""
     try:
-        d = requests.get('https://ya.ru/').status_code
+        d = requests.get('https://yandex.ru/').status_code
     except IOError:
         return [False, False]
     return [True, SERVER.check_token()]
@@ -244,17 +245,24 @@ def starting_load():
             file_str.append(', '.join(par))
     screen = pg.display.set_mode((600, 400))
     pg.display.set_caption('установка и устранение неполадок')
+    rb = ProgressBar(screen, 20, 275, 440, 8, COLORS['dark'], COLORS['grey'], COLORS['dark_green'], border=1)
     load = Button(20, 300, 200, 60, 'скачать', (60, 150, 60), screen)
     canc = Button(260, 300, 200, 60, 'закрыть', (150, 60, 60), screen)
     font = pg.font.Font(None, 30)
     text2 = font.render(f'версия: {VERSION_DATA["version"]}', True, [255, 215, 0])
+    to_lfi = len(lfi)
+    stlfi = 0
     while True:
         screen.fill((100, 100, 100))
+        if stlfi < int(100 * (to_lfi - len(lfi)) / to_lfi):
+            stlfi = int(100 * (to_lfi - len(lfi)) / to_lfi)
+            rb.set_prog(stlfi)
         text1 = font.render(f'файлов не установлено: {len(lfi)}', True, [255, 215, 0])
         rezult = enternet()
         text3 = font.render(f'интернет работает хорошо', True, [255, 215, 0])
         text4 = font.render(f'сервер доступен', True, [255, 215, 0])
         text5 = font.render(f'осталось скачать: {", ".join(lfi)}', True, [255, 215, 0])
+        rb.show(*pg.mouse.get_pos())
         if len(lfi) > 3:
             text5 = font.render(f'осталось скачать: {", ".join(lfi[0:3])}', True, [255, 215, 0])
             for i in range(len(file_str)):
